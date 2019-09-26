@@ -17,6 +17,11 @@ use @import("ecs.zig");
 use @import("math.zig");
 
 pub fn main() anyerror!void {
+    var mat: Matrix(4, 4, f32) = undefined;
+    var mat2 = mat;
+
+    _ = mat.composite(mat2);
+
     // std.debug.warn("{}", x.items);
 
     // var reg = Registry.init();
