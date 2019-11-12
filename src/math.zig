@@ -1,7 +1,5 @@
 const std = @import("std");
 
-
-
 pub fn Matrix(comptime N: u8, comptime M: u8, comptime T: type) type {
     return packed struct {
         pub const Elem = T;
@@ -67,7 +65,6 @@ pub fn Matrix(comptime N: u8, comptime M: u8, comptime T: type) type {
         pub fn composite(lhs: @This(), rhs: @This()) @This() {
             return lhs.mul(N, rhs);
         }
-
     };
 }
 
@@ -76,10 +73,10 @@ pub fn Quat(comptime T: type) type {
         pub const Elem = T;
         pub const Num = 4;
 
-        pub x: Elem,
-        pub y: Elem,
-        pub z: Elem,
-        pub w: Elem,
+        x: Elem,
+        y: Elem,
+        z: Elem,
+        w: Elem,
 
         pub fn normalize(self: *@This()) void {
             var length = self.magnitude();
@@ -111,9 +108,9 @@ pub fn Vec3(comptime T: type) type {
         pub const Elem = T;
         pub const Num = 3;
 
-        pub x: Elem,
-        pub y: Elem,
-        pub z: Elem,
+        x: Elem,
+        y: Elem,
+        z: Elem,
 
         pub inline fn add(self: @This(), rhs: @This()) @This() {
             return @This(){
@@ -163,8 +160,8 @@ pub fn Vec2(comptime T: type) type {
         pub const Elem = T;
         pub const Num = 2;
 
-        pub x: Elem,
-        pub y: Elem,
+        x: Elem,
+        y: Elem,
 
         pub inline fn add(self: @This(), rhs: @This()) @This() {
             return @This(){

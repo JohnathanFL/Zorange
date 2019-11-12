@@ -3,16 +3,25 @@ const builtin = @import("builtin");
 const Builder = std.build.Builder;
 
 pub fn build(b: *Builder) void {
-    
-
     const mode = builtin.Mode.Debug;
-    const lib = b.addExecutable("Zorange", "src/main.zig");
+    var lib = b.addExecutable("Zorange", "src/main.zig");
     lib.setBuildMode(mode);
     b.addNativeSystemIncludeDir("/usr/include");
+    b.addNativeSystemIncludeDir("/usr/local/include");
 
     lib.linkSystemLibrary("c");
-    lib.linkSystemLibrary("SDL2");
-    lib.linkSystemLibrary("epoxy");
+    lib.linkSystemLibrary("dl");
+    lib.linkSystemLibrary("x11");
+    lib.linkSystemLibrary("wayland-client");
+    lib.linkSystemLibrary("wayland-egl");
+    lib.linkSystemLibrary("stdc++");
+    lib.linkSystemLibrary("glfw");
+    lib.linkSystemLibrary("gl");
+    lib.linkSystemLibrary("glx");
+    lib.linkSystemLibrary("vulkan");
+    lib.linkSystemLibrary("bgfx");
+    lib.linkSystemLibrary("bx");
+    lib.linkSystemLibrary("bimg");
 
     lib.install();
 
