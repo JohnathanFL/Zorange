@@ -10,20 +10,21 @@ const std = @import("std");
 
 // Note: This shouldn't be instantiated. It's just to show what interface is needed
 const Storage = struct {
-    pub const ID = usize; // A usize from TypeID
-    pub const T = void; // The type we store
+    const T = void; // The type we store
+
+    // All of the following should be accessible to the World
 
     /// Only gets it if it's there
-    fn get(ent: Entity) ?*T;
+    pub fn get(ent: Entity) ?*T;
 
     /// Sets it, no matter what. Returns the current value
-    fn put(ent: Entity, new: T) *T;
+    pub fn put(ent: Entity, new: T) *T;
 
-    fn has(ent: Entity) bool;
+    pub fn has(ent: Entity) bool;
 
     // Each Storage should additionally add the following to
     // the world's deleted_callbacks at compiletime
-    fn delete(ent: Ent) void;
+    pub fn delete(ent: Ent) void;
 
     // A list of all views which hold this component.
     pub var views: std.SegmentedList(*View, 128);
@@ -38,9 +39,10 @@ pub fn TypeID(comptime ty: type) usize {
 
 pub fn VecStorage(comptime T: type, comptime alloc: *std.mem.Allocator) type {
     const S = struct {
-        pub const ID = TypeID(T);
+        /// Which views contain this Component?
+        var views = std.SegmentedList(*View, 128).init(alloc);
         // Why do I feel so dirty after writing things like this?
-        var storage: std.ArrayList(?T) = std.ArrayList(?T).init(alloc);
+        var storage = std.ArrayList(?T).init(alloc);
 
         fn get(ent: Entity) ?*T {
             const slice = storage.toSlice();
@@ -73,10 +75,50 @@ pub fn VecStorage(comptime T: type, comptime alloc: *std.mem.Allocator) type {
             }
         }
 
-        fn deleteEnt(ent: Entity) void {}
+        fn deleteEnt(ent: Entity) void {
+            var iter = views.iterator();
+            while (iter.next()) |view| {
+                view.remove(ent);
+            }
+
+            storage.at(ent.id) = null;
+        }
     };
 
     return S;
+}
+
+pub fn HashStorage(comptime T: type, comptime alloc: *std.mem.Allocator) type {
+    return struct {
+        var storage = AutoHashMap(Entity, T).init(alloc);
+        var views = std.SegmentedList(*View, 128).init(alloc);
+
+        fn get(ent: Entity) ?*T {
+            if (storage.get(ent)) |kv| {
+                return &kv.key;
+            } else {
+                return null;
+            }
+        }
+
+        fn put(ent: Entity, new: T) *T {
+            _ = storage.put(ent, new) catch unreachable;
+            return &storage.get(ent).?.key;
+        }
+
+        fn has(ent: Entity) bool {
+            return storage.contains(ent);
+        }
+
+        fn deleteEnt(ent: Entity) void {
+            _ = storage.remove(ent);
+
+            var iter = views.iterator();
+            while (iter.next()) |view| {
+                view.remove(ent);
+            }
+        }
+    };
 }
 
 pub const Entity = struct {
@@ -106,6 +148,11 @@ pub const Entity = struct {
 // A list of all ents having a certain set of components
 pub const View = struct {
     ents: std.AutoHashMap(Entity, void),
+
+    /// Ensure the ent isn't in this view
+    pub fn remove(ent: Entity) void {
+        _ = ents.remove(ent) catch unreachable;
+    }
 };
 
 pub const World = struct {
@@ -113,7 +160,6 @@ pub const World = struct {
     // for multiple Worlds in this context. Either way, it's all pretty abstracted,
     // so if needed we can just move to an ArrayList of Worlds or something like
     // that
-
 
     // I figure this is a good default.
     // Individual projects can just change it
@@ -158,6 +204,8 @@ pub const World = struct {
     }
 
     pub fn allWith(comptime tys: []const type) *View {
+
+        // Collect all Ents with these components
         _ = views.push(View{ .ents = std.AutoHashMap(Entity, void).init(views.allocator) }) catch unreachable;
         var view = views.at(views.len - 1);
         var iter = used_ids.iterator();
@@ -165,6 +213,12 @@ pub const World = struct {
             var ent = Entity{ .id = kvp.key };
             if (ent.hasComponents(tys))
                 view.ents.putNoClobber(ent, {}) catch unreachable;
+        }
+
+        // Notify the components of the new view
+
+        inline for (tys) |ty| {
+            ty.views.push(view) catch unreachable;
         }
 
         return view;

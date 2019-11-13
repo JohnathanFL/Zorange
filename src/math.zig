@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn Matrix(comptime N: u8, comptime M: u8, comptime T: type) type {
+pub fn Matrix(comptime T: type, comptime N: u8, comptime M: u8) type {
     return packed struct {
         pub const Elem = T;
         pub const Width = N;
@@ -45,7 +45,7 @@ pub fn Matrix(comptime N: u8, comptime M: u8, comptime T: type) type {
             return lhs.add(rhs.negate());
         }
 
-        pub fn mul(lhs: @This(), comptime P: u8, rhs: Matrix(M, P, Elem)) Matrix(N, P, Elem) {
+        pub fn mul(lhs: @This(), comptime P: u8, rhs: Matrix(M, P, Elem)) Matrix(Elem, N, P) {
             var res: Matrix(Width, P, Elem) = undefined;
             comptime var i = 0;
             inline while (i < N) : (i += 1) {
