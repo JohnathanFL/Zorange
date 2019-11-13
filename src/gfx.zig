@@ -1,3 +1,6 @@
+// This file will have bgfx/glfw abstractions
+// For the renderer, see renderer.zig
+
 const std = @import("std");
 
 pub usingnamespace @cImport({

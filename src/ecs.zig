@@ -24,6 +24,9 @@ const Storage = struct {
     // Each Storage should additionally add the following to
     // the world's deleted_callbacks at compiletime
     fn delete(ent: Ent) void;
+
+    // A list of all views which hold this component.
+    pub var views: std.SegmentedList(*View, 128);
 };
 
 // Each storage registers this with the World
@@ -106,6 +109,11 @@ pub const View = struct {
 };
 
 pub const World = struct {
+    // Sure singletons are supposed to be bad, but I really can't see a reason
+    // for multiple Worlds in this context. Either way, it's all pretty abstracted,
+    // so if needed we can just move to an ArrayList of Worlds or something like
+    // that
+
 
     // I figure this is a good default.
     // Individual projects can just change it
@@ -115,6 +123,7 @@ pub const World = struct {
     const MAX_COMPONENTS = 128;
 
     // A bitfield of which components each Entity has (indexed by Entity.id)
+    // TODO: Waiting on a way to assign a unique 0..MAX_COMPONENTS ID to each component
     var ent_comps: std.ArrayList([MAX_COMPONENTS]u1);
 
     var next_id: usize = 0;
@@ -155,7 +164,7 @@ pub const World = struct {
         while (iter.next()) |kvp| {
             var ent = Entity{ .id = kvp.key };
             if (ent.hasComponents(tys))
-                _ = view.ents.put(ent, {}) catch unreachable;
+                view.ents.putNoClobber(ent, {}) catch unreachable;
         }
 
         return view;
