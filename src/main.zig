@@ -52,20 +52,10 @@ pub fn main() anyerror!void {
     defer gfx.glfwDestroyWindow(window);
 
     var platform_data = gfx.bgfx_platform_data_t{
-        .ndt = gfx.glfwGetWaylandDisplay(),
-        // pd.ndt      = glfwGetX11Display();
-        .nwh = blk: {
-            var win_impl = gfx.glfwGetWindowUserPointer(window);
-            if (win_impl == null) {
-                gfx.glfwGetWindowSize(window, &width, &height);
-                var surface = gfx.glfwGetWaylandWindow(window);
-                if (surface == null)
-                    break :blk null;
-                win_impl = gfx.wl_egl_window_create(surface, width, height);
-                gfx.glfwSetWindowUserPointer(window, win_impl);
-            }
-            break :blk win_impl;
-        },
+        // TODO: Make this all work with wayland.
+        //.ndt = gfx.glfwGetWaylandDisplay(),
+        .ndt      = gfx.glfwGetX11Display(),
+        .nwh = @intToPtr(*c_void, gfx.glfwGetX11Window(window)),
         .context = null,
         .backBuffer = null,
         .backBufferDS = null,
@@ -104,11 +94,19 @@ pub fn main() anyerror!void {
 
     _ = gfx.glfwSetKeyCallback(window, keyCallback);
 
+    var timer = std.time.Timer.start() catch unreachable;
     while (gfx.glfwWindowShouldClose(window) == gfx.GLFW_FALSE) {
         gfx.glfwPollEvents();
         gfx.glfwGetWindowSize(window, &width, &height);
         //printf("Current size: {}, {}\n", width, height);
         gfx.bgfx_set_view_rect(0, 0, 0, @intCast(u16, width), @intCast(u16, height));
         gfx.bgfx_touch(0);
+
+        // The 2 spaces are needed otherwise it somehow has a ghost at the end of the line
+        gfx.bgfx_dbg_text_printf(0,0,0x0f, c"FPS: %.0f  ", 1.0 / (@intToFloat(f64, timer.lap()) / 1000 / 1000 / 1000));
+        
+        _ = gfx.bgfx_frame(false);
+
+        std.time.sleep(16 * 1000 * 1000);
     }
 }

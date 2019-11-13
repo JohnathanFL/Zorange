@@ -8,7 +8,7 @@ pub usingnamespace @cImport({
 
     // GLFW shouldn't include any GL
     @cDefine("GLFW_INCLUDE_NONE", "");
-    @cDefine("GLFW_EXPOSE_NATIVE_WAYLAND", "");
+    @cDefine("GLFW_EXPOSE_NATIVE_X11", "");
 
     @cInclude("GLFW/glfw3.h");
     @cInclude("GLFW/glfw3native.h");
